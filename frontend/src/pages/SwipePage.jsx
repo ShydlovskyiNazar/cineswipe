@@ -11,6 +11,15 @@ const TUTORIAL_STEPS = [
   { emoji: '🎉', title: 'Готово!', desc: 'Тепер ти знаєш як користуватись CineSwipe. Насолоджуйся!', arrow: null },
 ]
 
+const ACHIEVEMENTS = [
+  { id: 'first', icon: '🎬', title: { uk: 'Перший фільм!', en: 'First film!' }, desc: { uk: 'Вітаємо! Продовжуй у тому ж темпі 🚀', en: 'Congrats! Keep it up 🚀' }, check: s => s >= 1 },
+  { id: 'five', icon: '⭐', title: { uk: '5 фільмів!', en: '5 films!' }, desc: { uk: 'Ти вже справжній глядач!', en: 'You are a real viewer!' }, check: s => s >= 5 },
+  { id: 'ten', icon: '🔥', title: { uk: '10 фільмів!', en: '10 films!' }, desc: { uk: 'Неймовірно! Так тримати!', en: 'Incredible! Keep going!' }, check: s => s >= 10 },
+  { id: 'twenty', icon: '💎', title: { uk: '20 фільмів!', en: '20 films!' }, desc: { uk: 'Ти стаєш справжнім кіноманом!', en: 'You are becoming a cinephile!' }, check: s => s >= 20 },
+  { id: 'fifty', icon: '👑', title: { uk: '50 фільмів!', en: '50 films!' }, desc: { uk: 'Справжній кіноман! Легенда!', en: 'True cinephile! Legend!' }, check: s => s >= 50 },
+  { id: 'hundred', icon: '🏆', title: { uk: '100 фільмів!', en: '100 films!' }, desc: { uk: 'Легенда кіно! Ти неймовірний!', en: 'Cinema legend! You are incredible!' }, check: s => s >= 100 },
+]
+
 const GENRES = {
   uk: [
     { id: 'all', label: 'Всі' },
@@ -40,7 +49,7 @@ function saveSeenIds(set) {
   catch {}
 }
 
-export function SwipePage({ lang = 'uk' }) {
+export function SwipePage({ lang = 'uk', onAchievement }) {
   const [movies, setMovies] = useState([])
   const [genre, setGenre] = useState('all')
   const [page, setPage] = useState(1)
@@ -85,6 +94,22 @@ export function SwipePage({ lang = 'uk' }) {
 
   const markSeen = (id) => { seenIds.current.add(id); saveSeenIds(seenIds.current) }
 
+  const checkAchievements = async () => {
+    try {
+      const r = await API.get('/stats')
+      const count = r.data.watched_count
+      const prev = JSON.parse(localStorage.getItem('achievements') || '[]')
+      for (const a of ACHIEVEMENTS) {
+        if (a.check(count) && !prev.includes(a.id)) {
+          const updated = [...prev, a.id]
+          localStorage.setItem('achievements', JSON.stringify(updated))
+          if (onAchievement) onAchievement(a)
+          break
+        }
+      }
+    } catch {}
+  }
+
   const applyDrag = (dx, dy) => {
     const card = cardRef.current
     if (!card) return
@@ -118,6 +143,7 @@ export function SwipePage({ lang = 'uk' }) {
     const card = cardRef.current
     setLiveScore(null); setSwipeDir(null)
     const isUp = Math.abs(dy) > Math.abs(dx) && dy < -80
+
     if (isUp && current) {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateY(-700px)' }
       await API.post('/watchlist/add', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year }).catch(() => {})
@@ -127,6 +153,7 @@ export function SwipePage({ lang = 'uk' }) {
       const score = Math.min(10, Math.max(1, Math.round((dx / SWIPE_MAX) * 9) + 1))
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateX(700px) rotate(35deg)' }
       await API.post('/movies/rate', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year, score }).catch(() => {})
+      checkAchievements()
       markSeen(current.id)
       setTimeout(() => { setMovies(prev => prev.slice(1)); if (card) { card.style.transition = ''; card.style.transform = '' } }, 300)
     } else if (dx < -80 && current) {
@@ -154,6 +181,7 @@ export function SwipePage({ lang = 'uk' }) {
     } else {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateX(700px) rotate(35deg)' }
       await API.post('/movies/rate', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year, score: 8 }).catch(() => {})
+      checkAchievements()
       markSeen(current.id)
       setTimeout(() => setMovies(prev => prev.slice(1)), 300)
     }
