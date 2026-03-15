@@ -1,25 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react'
 import API from '../api'
 
-const GENRES = [
-  { id: 'all', label: 'Всі' },
-  { id: 'action', label: 'Бойовик' },
-  { id: 'drama', label: 'Драма' },
-  { id: 'comedy', label: 'Комедія' },
-  { id: 'thriller', label: 'Трилер' },
-  { id: 'sci-fi', label: 'Фантастика' },
-]
-
 const SWIPE_MAX = 150
 const CURRENT_YEAR = new Date().getFullYear()
 
-// Onboarding tutorial steps
 const TUTORIAL_STEPS = [
   { emoji: '👉', title: 'Свайп вправо', desc: 'Тягни вправо — фільм переглянуто! Чим далі — тим вища оцінка', arrow: 'right' },
   { emoji: '👈', title: 'Свайп вліво', desc: 'Тягни вліво — не цікаво, пропустити', arrow: 'left' },
   { emoji: '👆', title: 'Свайп вгору', desc: 'Тягни вгору — додати до списку "Хочу подивитись"', arrow: 'up' },
   { emoji: '🎉', title: 'Готово!', desc: 'Тепер ти знаєш як користуватись CineSwipe. Насолоджуйся!', arrow: null },
 ]
+
+const GENRES = {
+  uk: [
+    { id: 'all', label: 'Всі' },
+    { id: 'action', label: 'Бойовик' },
+    { id: 'drama', label: 'Драма' },
+    { id: 'comedy', label: 'Комедія' },
+    { id: 'thriller', label: 'Трилер' },
+    { id: 'sci-fi', label: 'Фантастика' },
+  ],
+  en: [
+    { id: 'all', label: 'All' },
+    { id: 'action', label: 'Action' },
+    { id: 'drama', label: 'Drama' },
+    { id: 'comedy', label: 'Comedy' },
+    { id: 'thriller', label: 'Thriller' },
+    { id: 'sci-fi', label: 'Sci-Fi' },
+  ],
+}
 
 export function SwipePage({ lang = 'uk' }) {
   const [movies, setMovies] = useState([])
@@ -36,7 +45,6 @@ export function SwipePage({ lang = 'uk' }) {
   const cardRef = useRef(null)
   const seenIds = useRef(new Set())
 
-  // Show tutorial for first-time users
   useEffect(() => {
     const seen = localStorage.getItem('cineswipe_tutorial_done')
     if (!seen) setTutorialStep(0)
@@ -58,26 +66,28 @@ export function SwipePage({ lang = 'uk' }) {
   useEffect(() => { seenIds.current.clear(); setPage(1); fetchMovies(genre, 1) }, [genre, yearFrom, yearTo])
 
   const current = movies[0]
+  const genres = GENRES[lang] || GENRES.uk
+
+  const T = {
+    uk: { from: 'від', to: 'до', loading: 'Завантаження...', empty: 'Фільми закінчились 🎬', noWatched: 'Не дивився', want: 'Хочу', watched: 'Дивився', score: 'Ваша оцінка', swipeUp: 'ХОЧУ ДИВИТИСЬ', swipeLeft: 'НЕ ЦІКАВО' },
+    en: { from: 'from', to: 'to', loading: 'Loading...', empty: 'No more films 🎬', noWatched: 'Skip', want: 'Want', watched: 'Watched', score: 'Your rating', swipeUp: 'WANT TO WATCH', swipeLeft: 'NOT INTERESTED' },
+  }[lang] || {}
 
   const applyDrag = (dx, dy) => {
     const card = cardRef.current
     if (!card) return
     if (Math.abs(dy) > Math.abs(dx) && dy < -30) {
-      // swiping up
       card.style.transform = `translateY(${dy}px) rotate(${dx * 0.03}deg)`
-      setSwipeDir('up')
-      setLiveScore(null)
+      setSwipeDir('up'); setLiveScore(null)
     } else if (dx > 0) {
       card.style.transform = `translateX(${dx}px) rotate(${dx * 0.07}deg)`
       setLiveScore(Math.min(10, Math.max(1, Math.round((dx / SWIPE_MAX) * 9) + 1)))
       setSwipeDir('right')
     } else if (dx < 0) {
       card.style.transform = `translateX(${dx}px) rotate(${dx * 0.07}deg)`
-      setSwipeDir('left')
-      setLiveScore(null)
+      setSwipeDir('left'); setLiveScore(null)
     } else {
-      setSwipeDir(null)
-      setLiveScore(null)
+      setSwipeDir(null); setLiveScore(null)
     }
   }
 
@@ -96,11 +106,8 @@ export function SwipePage({ lang = 'uk' }) {
     drag.current.active = false
     const { dx, dy } = drag.current
     const card = cardRef.current
-    setLiveScore(null)
-    setSwipeDir(null)
-
+    setLiveScore(null); setSwipeDir(null)
     const isUp = Math.abs(dy) > Math.abs(dx) && dy < -80
-
     if (isUp && current) {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateY(-700px)' }
       await API.post('/watchlist/add', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year }).catch(() => {})
@@ -147,11 +154,6 @@ export function SwipePage({ lang = 'uk' }) {
     setTutorialStep(null)
   }
 
-  const T = {
-    uk: { all: 'Всі', filter: 'Рік', from: 'від', to: 'до', loading: 'Завантаження...', empty: 'Фільми закінчились 🎬', noWatched: 'Не дивився', want: 'Хочу', watched: 'Дивився', score: 'Ваша оцінка', swipeUp: 'ХОЧУ ДИВИТИСЬ', swipeLeft: 'НЕ ЦІКАВО' },
-    en: { all: 'All', filter: 'Year', from: 'from', to: 'to', loading: 'Loading...', empty: 'No more films 🎬', noWatched: 'Skip', want: 'Want', watched: 'Watched', score: 'Your rating', swipeUp: 'WANT TO WATCH', swipeLeft: 'NOT INTERESTED' },
-  }[lang] || {}
-
   if (loading && movies.length === 0) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>{T.loading}</div>
   )
@@ -159,19 +161,12 @@ export function SwipePage({ lang = 'uk' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', position: 'relative' }}>
 
-      {/* Tutorial overlay */}
       {tutorialStep !== null && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.85)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div style={{ fontSize: 60, marginBottom: 16 }}>{TUTORIAL_STEPS[tutorialStep].emoji}</div>
-          {TUTORIAL_STEPS[tutorialStep].arrow === 'right' && (
-            <div style={{ fontSize: 40, color: '#27ae60', marginBottom: 8, animation: 'pulse 1s infinite' }}>→</div>
-          )}
-          {TUTORIAL_STEPS[tutorialStep].arrow === 'left' && (
-            <div style={{ fontSize: 40, color: '#e8335a', marginBottom: 8 }}>←</div>
-          )}
-          {TUTORIAL_STEPS[tutorialStep].arrow === 'up' && (
-            <div style={{ fontSize: 40, color: '#3a7bd5', marginBottom: 8 }}>↑</div>
-          )}
+          {TUTORIAL_STEPS[tutorialStep].arrow === 'right' && <div style={{ fontSize: 40, color: '#27ae60', marginBottom: 8 }}>→</div>}
+          {TUTORIAL_STEPS[tutorialStep].arrow === 'left' && <div style={{ fontSize: 40, color: '#e8335a', marginBottom: 8 }}>←</div>}
+          {TUTORIAL_STEPS[tutorialStep].arrow === 'up' && <div style={{ fontSize: 40, color: '#3a7bd5', marginBottom: 8 }}>↑</div>}
           <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 22, color: '#fff', marginBottom: 10, textAlign: 'center' }}>{TUTORIAL_STEPS[tutorialStep].title}</div>
           <div style={{ fontSize: 14, color: 'rgba(255,255,255,.7)', textAlign: 'center', marginBottom: 28, lineHeight: 1.6 }}>{TUTORIAL_STEPS[tutorialStep].desc}</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -180,31 +175,24 @@ export function SwipePage({ lang = 'uk' }) {
             ))}
           </div>
           {tutorialStep < TUTORIAL_STEPS.length - 1 ? (
-            <button onClick={() => setTutorialStep(s => s + 1)} style={{ background: '#e8335a', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 24, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-              Далі →
-            </button>
+            <button onClick={() => setTutorialStep(s => s + 1)} style={{ background: '#e8335a', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 24, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Далі →</button>
           ) : (
-            <button onClick={finishTutorial} style={{ background: '#e8335a', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 24, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-              Почати! 🎬
-            </button>
+            <button onClick={finishTutorial} style={{ background: '#e8335a', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 24, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Почати! 🎬</button>
           )}
         </div>
       )}
 
-      {/* Top bar: genre filters + year filter */}
       <div style={{ background: '#fff', borderBottom: '1px solid #f0ebe4', flexShrink: 0 }}>
         <div style={{ padding: '7px 10px', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', alignItems: 'center' }}>
-          {GENRES.map(g => (
+          {genres.map(g => (
             <button key={g.id} onClick={() => setGenre(g.id)} style={{ padding: '4px 12px', borderRadius: 20, border: '1.5px solid', borderColor: genre === g.id ? '#e8335a' : '#e0d8d0', background: genre === g.id ? '#e8335a' : 'transparent', color: genre === g.id ? '#fff' : '#666', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {g.label}
             </button>
           ))}
-          {/* Year filter button */}
           <button onClick={() => setShowYearFilter(v => !v)} style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, border: '1.5px solid', borderColor: showYearFilter ? '#e8335a' : '#e0d8d0', background: showYearFilter ? '#fff0f3' : 'transparent', color: showYearFilter ? '#e8335a' : '#666', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
             📅 {yearFrom}–{yearTo}
           </button>
         </div>
-        {/* Year range picker */}
         {showYearFilter && (
           <div style={{ padding: '10px 16px 14px', borderTop: '1px solid #f5f5f5' }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
@@ -221,10 +209,11 @@ export function SwipePage({ lang = 'uk' }) {
         )}
       </div>
 
-      {/* Card stack */}
       <div style={{ flex: 1, position: 'relative', padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {movies.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>{T.empty}<br/><button onClick={() => { seenIds.current.clear(); fetchMovies(genre, 1) }} style={{ marginTop: 12, background: '#e8335a', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: 20, cursor: 'pointer', fontSize: 12 }}>Оновити</button></div>
+          <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>{T.empty}<br/>
+            <button onClick={() => { seenIds.current.clear(); fetchMovies(genre, 1) }} style={{ marginTop: 12, background: '#e8335a', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: 20, cursor: 'pointer', fontSize: 12 }}>Оновити</button>
+          </div>
         ) : (
           <div style={{ position: 'relative', width: '100%', height: 320 }}>
             {movies.slice(1, 3).reverse().map((m, i) => (
@@ -251,8 +240,6 @@ export function SwipePage({ lang = 'uk' }) {
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,.55)', marginBottom: 3 }}>{current.year}</div>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,.45)' }}>{current.genres}</div>
                 </div>
-
-                {/* Live rating (swipe right) */}
                 {liveScore && swipeDir === 'right' && (
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', borderRadius: 20, overflow: 'hidden', pointerEvents: 'none' }}>
                     <div style={{ width: 46, background: 'rgba(255,255,255,.95)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 0', gap: 1 }}>
@@ -266,13 +253,9 @@ export function SwipePage({ lang = 'uk' }) {
                     </div>
                   </div>
                 )}
-
-                {/* Swipe left hint */}
                 {swipeDir === 'left' && (
                   <div style={{ position: 'absolute', top: '50%', left: 14, transform: 'translateY(-50%)', color: '#e8335a', border: '3px solid #e8335a', padding: '5px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: 'rgba(255,255,255,.92)', pointerEvents: 'none' }}>{T.swipeLeft}</div>
                 )}
-
-                {/* Swipe up hint */}
                 {swipeDir === 'up' && (
                   <div style={{ position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)', color: '#3a7bd5', border: '3px solid #3a7bd5', padding: '5px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: 'rgba(255,255,255,.92)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>{T.swipeUp}</div>
                 )}
@@ -282,7 +265,6 @@ export function SwipePage({ lang = 'uk' }) {
         )}
       </div>
 
-      {/* Action buttons */}
       <div style={{ padding: '0 12px 10px', display: 'flex', justifyContent: 'center', gap: 16, background: '#f0ece6' }}>
         {[
           { action: 'skip', icon: '✕', label: T.noWatched, color: '#e8335a', bg: '#fff' },
