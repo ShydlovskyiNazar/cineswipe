@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from . import models, auth
 from .database import get_db, engine
 from .tmdb import get_popular, search_movies, GENRE_MAP
@@ -20,7 +20,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Schemas ---
 class RegisterSchema(BaseModel):
     email: str
     username: str
@@ -41,7 +40,9 @@ class WatchlistSchema(BaseModel):
     movie_genres: Optional[str]
     movie_year: Optional[int]
 
-# --- Auth ---
+class UsernameSchema(BaseModel):
+    username: str
+
 @app.post("/auth/register")
 def register(data: RegisterSchema, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == data.email).first():
@@ -69,7 +70,12 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 def me(current_user: models.User = Depends(auth.get_current_user)):
     return {"id": current_user.id, "email": current_user.email, "username": current_user.username}
 
-# --- Movies ---
+@app.patch("/auth/username")
+def update_username(data: UsernameSchema, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    current_user.username = data.username
+    db.commit()
+    return {"ok": True, "username": data.username}
+
 @app.get("/movies/swipe")
 async def swipe_movies(
     page: int = 1,
@@ -90,7 +96,6 @@ async def swipe_movies(
 async def search(q: str = Query(..., min_length=1)):
     return await search_movies(q)
 
-# --- Ratings ---
 @app.post("/movies/rate")
 def rate_movie(data: RateSchema, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     existing = db.query(models.MovieRating).filter_by(user_id=current_user.id, movie_id=data.movie_id).first()
@@ -100,7 +105,6 @@ def rate_movie(data: RateSchema, db: Session = Depends(get_db), current_user: mo
         rating = models.MovieRating(user_id=current_user.id, **data.dict())
         db.add(rating)
     db.commit()
-    # remove from watchlist if present
     db.query(models.Watchlist).filter_by(user_id=current_user.id, movie_id=data.movie_id).delete()
     db.commit()
     return {"ok": True}
@@ -109,7 +113,6 @@ def rate_movie(data: RateSchema, db: Session = Depends(get_db), current_user: mo
 def get_rated(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.MovieRating).filter_by(user_id=current_user.id).order_by(models.MovieRating.created_at.desc()).all()
 
-# --- Watchlist ---
 @app.post("/watchlist/add")
 def add_watchlist(data: WatchlistSchema, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     existing = db.query(models.Watchlist).filter_by(user_id=current_user.id, movie_id=data.movie_id).first()
@@ -129,7 +132,13 @@ def remove_watchlist(movie_id: int, db: Session = Depends(get_db), current_user:
 def get_watchlist(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Watchlist).filter_by(user_id=current_user.id).order_by(models.Watchlist.created_at.desc()).all()
 
-# --- Stats ---
+@app.delete("/user/reset")
+def reset_progress(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    db.query(models.MovieRating).filter_by(user_id=current_user.id).delete()
+    db.query(models.Watchlist).filter_by(user_id=current_user.id).delete()
+    db.commit()
+    return {"ok": True}
+
 @app.get("/stats")
 def get_stats(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     ratings = db.query(models.MovieRating).filter_by(user_id=current_user.id).all()

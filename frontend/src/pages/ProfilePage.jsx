@@ -13,10 +13,12 @@ export function ProfilePage({ onLogout, username, lang, setLang }) {
   const [newName, setNewName] = useState(username)
   const [saving, setSaving] = useState(false)
   const [showLangPicker, setShowLangPicker] = useState(false)
+  const [aiEnabled, setAiEnabled] = useState(() => localStorage.getItem('ai_enabled') !== 'false')
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const T = {
-    uk: { profile: 'Мій профіль', watched: 'Переглянуто', want: 'Хочу', avg: 'Сер. оцінка', topGenres: 'Топ жанри', avgScore: 'Середня оцінка', lang: 'Мова', save: 'Зберегти', cancel: 'Скасувати', logout: 'Вийти', minRating: 'Мінімальний рейтинг', aiRecs: 'AI-рекомендації' },
-    en: { profile: 'My Profile', watched: 'Watched', want: 'Watchlist', avg: 'Avg score', topGenres: 'Top genres', avgScore: 'Average score', lang: 'Language', save: 'Save', cancel: 'Cancel', logout: 'Log out', minRating: 'Minimum rating', aiRecs: 'AI recommendations' },
+    uk: { watched: 'Переглянуто', want: 'Хочу', avg: 'Сер. оцінка', topGenres: 'Топ жанри', avgScore: 'Середня оцінка', lang: 'Мова', save: 'Зберегти', cancel: 'Скасувати', logout: 'Вийти', minRating: 'Мінімальний рейтинг', aiRecs: 'AI-рекомендації', reset: 'Скинути прогрес', resetConfirm: 'Ти впевнений? Всі оцінки та переглянуті фільми будуть видалені!', resetYes: 'Так, скинути', resetNo: 'Скасувати', resetDone: 'Прогрес скинуто!' },
+    en: { watched: 'Watched', want: 'Watchlist', avg: 'Avg score', topGenres: 'Top genres', avgScore: 'Average score', lang: 'Language', save: 'Save', cancel: 'Cancel', logout: 'Log out', minRating: 'Minimum rating', aiRecs: 'AI recommendations', reset: 'Reset progress', resetConfirm: 'Are you sure? All ratings and watched films will be deleted!', resetYes: 'Yes, reset', resetNo: 'Cancel', resetDone: 'Progress reset!' },
   }[lang] || {}
 
   useEffect(() => {
@@ -33,13 +35,43 @@ export function ProfilePage({ onLogout, username, lang, setLang }) {
     } finally { setSaving(false) }
   }
 
-  if (loading) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Завантаження...</div>
+  const toggleAi = () => {
+    const next = !aiEnabled
+    setAiEnabled(next)
+    localStorage.setItem('ai_enabled', String(next))
+  }
+
+  const resetProgress = async () => {
+    try {
+      await API.delete('/user/reset')
+    } catch {}
+    localStorage.removeItem('seen_ids')
+    localStorage.removeItem('cineswipe_tutorial_done')
+    setShowResetConfirm(false)
+    setStats({ watched_count: 0, want_count: 0, average_score: 0, genre_counts: {} })
+    alert(T.resetDone)
+  }
+
+  if (loading) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>...</div>
 
   const genreData = stats ? Object.entries(stats.genre_counts || {}).sort((a, b) => b[1] - a[1]).slice(0, 5) : []
   const maxGenre = genreData[0]?.[1] || 1
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 14, background: '#f0ece6' }}>
+
+      {/* Reset confirm modal */}
+      {showResetConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 24, width: '100%', maxWidth: 340 }}>
+            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 12 }}>⚠️</div>
+            <div style={{ fontSize: 14, color: '#333', textAlign: 'center', marginBottom: 20, lineHeight: 1.6 }}>{T.resetConfirm}</div>
+            <button onClick={resetProgress} style={{ width: '100%', padding: '12px 0', borderRadius: 14, background: '#e8335a', color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 8 }}>{T.resetYes}</button>
+            <button onClick={() => setShowResetConfirm(false)} style={{ width: '100%', padding: '12px 0', borderRadius: 14, background: '#f5f0eb', color: '#888', border: 'none', fontSize: 14, cursor: 'pointer' }}>{T.resetNo}</button>
+          </div>
+        </div>
+      )}
+
       <div style={{ background: '#fff', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <div style={{ width: 62, height: 62, borderRadius: '50%', background: '#e8335a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🎬</div>
         {editName ? (
@@ -94,6 +126,8 @@ export function ProfilePage({ onLogout, username, lang, setLang }) {
       )}
 
       <div style={{ background: '#fff', borderRadius: 14, overflow: 'hidden', marginBottom: 10 }}>
+
+        {/* Language */}
         <div onClick={() => setShowLangPicker(v => !v)} style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '.5px solid #f5f5f5', cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: '#f0f4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌍</div>
@@ -113,15 +147,25 @@ export function ProfilePage({ onLogout, username, lang, setLang }) {
             ))}
           </div>
         )}
+
+        {/* AI toggle */}
         <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '.5px solid #f5f5f5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: '#f0fff4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🤖</div>
             <div style={{ fontSize: 13, color: '#1a1a1a' }}>{T.aiRecs}</div>
           </div>
-          <div style={{ width: 42, height: 23, background: '#e8335a', borderRadius: 12, position: 'relative', cursor: 'pointer' }}>
-            <div style={{ width: 19, height: 19, background: '#fff', borderRadius: '50%', position: 'absolute', top: 2, left: 21, boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
+          <div onClick={toggleAi} style={{ width: 42, height: 23, background: aiEnabled ? '#e8335a' : '#e0e0e0', borderRadius: 12, position: 'relative', cursor: 'pointer', transition: 'background .2s' }}>
+            <div style={{ width: 19, height: 19, background: '#fff', borderRadius: '50%', position: 'absolute', top: 2, left: aiEnabled ? 21 : 2, transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
           </div>
         </div>
+
+        {/* Reset progress */}
+        <div onClick={() => setShowResetConfirm(true)} style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: '.5px solid #f5f5f5' }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: '#fff8e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🔄</div>
+          <div style={{ fontSize: 13, color: '#f39c12' }}>{T.reset}</div>
+        </div>
+
+        {/* Logout */}
         <div onClick={onLogout} style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
           <div style={{ width: 30, height: 30, borderRadius: 8, background: '#fff0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🚪</div>
           <div style={{ fontSize: 13, color: '#e8335a' }}>{T.logout}</div>
