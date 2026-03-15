@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { AuthPage } from './pages/AuthPage'
 import { SwipePage } from './pages/SwipePage'
 import { WatchedPage } from './pages/WatchedPage'
@@ -9,12 +9,7 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'))
   const [username, setUsername] = useState(localStorage.getItem('username') || '')
   const [tab, setTab] = useState('swipe')
-  const [lang, setLang] = useState(localStorage.getItem('lang') || 'uk')
-
-  useEffect(() => {
-    const saved = localStorage.getItem('lang')
-    if (saved) setLang(saved)
-  }, [])
+  const [lang, setLang] = useState(() => localStorage.getItem('lang') || 'uk')
 
   const login = (tok, uname) => {
     localStorage.setItem('token', tok)
@@ -50,14 +45,12 @@ export default function App() {
           {lang === 'uk' ? 'Привіт' : 'Hello'}, {username}!
         </div>
       </div>
-
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'swipe' && <SwipePage lang={lang} />}
         {tab === 'watched' && <WatchedPage lang={lang} />}
         {tab === 'want' && <WantPage lang={lang} />}
         {tab === 'profile' && <ProfilePage onLogout={logout} username={username} lang={lang} setLang={changeLang} />}
       </div>
-
       <div style={{ background: '#fff', borderTop: '1px solid #f0ebe4', display: 'flex', justifyContent: 'space-around', padding: '8px 0 6px', flexShrink: 0 }}>
         {[
           { id: 'swipe', icon: '🎬', label: T.pick },
