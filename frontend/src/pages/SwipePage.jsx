@@ -31,15 +31,13 @@ const GENRES = {
 }
 
 function loadSeenIds() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem('seen_ids') || '[]'))
-  } catch { return new Set() }
+  try { return new Set(JSON.parse(localStorage.getItem('seen_ids') || '[]')) }
+  catch { return new Set() }
 }
 
 function saveSeenIds(set) {
-  try {
-    localStorage.setItem('seen_ids', JSON.stringify([...set]))
-  } catch {}
+  try { localStorage.setItem('seen_ids', JSON.stringify([...set])) }
+  catch {}
 }
 
 export function SwipePage({ lang = 'uk' }) {
@@ -75,10 +73,7 @@ export function SwipePage({ lang = 'uk' }) {
     finally { setLoading(false) }
   }
 
-  useEffect(() => {
-    setPage(1)
-    fetchMovies(genre, 1)
-  }, [genre, yearFrom, yearTo])
+  useEffect(() => { setPage(1); fetchMovies(genre, 1) }, [genre, yearFrom, yearTo])
 
   const current = movies[0]
   const genres = GENRES[lang] || GENRES.uk
@@ -88,10 +83,7 @@ export function SwipePage({ lang = 'uk' }) {
     en: { from: 'from', to: 'to', loading: 'Loading...', empty: 'No more films 🎬', refresh: 'Refresh', noWatched: 'Skip', want: 'Want', watched: 'Watched', score: 'Your rating', swipeUp: 'WANT TO WATCH', swipeLeft: 'NOT INTERESTED' },
   }[lang] || {}
 
-  const markSeen = (id) => {
-    seenIds.current.add(id)
-    saveSeenIds(seenIds.current)
-  }
+  const markSeen = (id) => { seenIds.current.add(id); saveSeenIds(seenIds.current) }
 
   const applyDrag = (dx, dy) => {
     const card = cardRef.current
@@ -106,9 +98,7 @@ export function SwipePage({ lang = 'uk' }) {
     } else if (dx < 0) {
       card.style.transform = `translateX(${dx}px) rotate(${dx * 0.07}deg)`
       setSwipeDir('left'); setLiveScore(null)
-    } else {
-      setSwipeDir(null); setLiveScore(null)
-    }
+    } else { setSwipeDir(null); setLiveScore(null) }
   }
 
   const onStart = (x, y) => {
@@ -128,7 +118,6 @@ export function SwipePage({ lang = 'uk' }) {
     const card = cardRef.current
     setLiveScore(null); setSwipeDir(null)
     const isUp = Math.abs(dy) > Math.abs(dx) && dy < -80
-
     if (isUp && current) {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateY(-700px)' }
       await API.post('/watchlist/add', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year }).catch(() => {})
@@ -183,11 +172,11 @@ export function SwipePage({ lang = 'uk' }) {
   }
 
   if (loading && movies.length === 0) return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>{T.loading}</div>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', fontSize: 14 }}>{T.loading}</div>
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', position: 'relative', background: 'var(--bg)' }}>
 
       {tutorialStep !== null && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.85)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -210,26 +199,26 @@ export function SwipePage({ lang = 'uk' }) {
         </div>
       )}
 
-      <div style={{ background: '#fff', borderBottom: '1px solid #f0ebe4', flexShrink: 0 }}>
+      <div style={{ background: 'var(--header)', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ padding: '7px 10px', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', alignItems: 'center' }}>
           {genres.map(g => (
-            <button key={g.id} onClick={() => setGenre(g.id)} style={{ padding: '4px 12px', borderRadius: 20, border: '1.5px solid', borderColor: genre === g.id ? '#e8335a' : '#e0d8d0', background: genre === g.id ? '#e8335a' : 'transparent', color: genre === g.id ? '#fff' : '#666', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <button key={g.id} onClick={() => setGenre(g.id)} style={{ padding: '4px 12px', borderRadius: 20, border: '1.5px solid', borderColor: genre === g.id ? '#e8335a' : 'var(--border2)', background: genre === g.id ? '#e8335a' : 'var(--bg)', color: genre === g.id ? '#fff' : 'var(--text2)', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {g.label}
             </button>
           ))}
-          <button onClick={() => setShowYearFilter(v => !v)} style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, border: '1.5px solid', borderColor: showYearFilter ? '#e8335a' : '#e0d8d0', background: showYearFilter ? '#fff0f3' : 'transparent', color: showYearFilter ? '#e8335a' : '#666', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <button onClick={() => setShowYearFilter(v => !v)} style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, border: '1.5px solid', borderColor: showYearFilter ? '#e8335a' : 'var(--border2)', background: showYearFilter ? '#e8335a' : 'var(--bg)', color: showYearFilter ? '#fff' : 'var(--text2)', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
             📅 {yearFrom}–{yearTo}
           </button>
         </div>
         {showYearFilter && (
-          <div style={{ padding: '10px 16px 14px', borderTop: '1px solid #f5f5f5' }}>
+          <div style={{ padding: '10px 16px 14px', borderTop: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', gap: 16 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>{T.from}: {yearFrom}</div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>{T.from}: {yearFrom}</div>
                 <input type="range" min="1950" max={yearTo} value={yearFrom} onChange={e => setYearFrom(Number(e.target.value))} style={{ width: '100%', accentColor: '#e8335a' }} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>{T.to}: {yearTo}</div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>{T.to}: {yearTo}</div>
                 <input type="range" min={yearFrom} max={CURRENT_YEAR} value={yearTo} onChange={e => setYearTo(Number(e.target.value))} style={{ width: '100%', accentColor: '#e8335a' }} />
               </div>
             </div>
@@ -239,7 +228,7 @@ export function SwipePage({ lang = 'uk' }) {
 
       <div style={{ flex: 1, position: 'relative', padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {movies.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>
+          <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
             {T.empty}<br/>
             <button onClick={handleRefresh} style={{ marginTop: 12, background: '#e8335a', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: 20, cursor: 'pointer', fontSize: 12 }}>{T.refresh}</button>
           </div>
@@ -294,17 +283,17 @@ export function SwipePage({ lang = 'uk' }) {
         )}
       </div>
 
-      <div style={{ padding: '0 12px 10px', display: 'flex', justifyContent: 'center', gap: 16, background: '#f0ece6' }}>
+      <div style={{ padding: '0 12px 10px', display: 'flex', justifyContent: 'center', gap: 16, background: 'var(--bg)' }}>
         {[
-          { action: 'skip', icon: '✕', label: T.noWatched, color: '#e8335a', bg: '#fff' },
+          { action: 'skip', icon: '✕', label: T.noWatched, color: '#e8335a', bg: 'var(--card)' },
           { action: 'want', icon: '↑', label: T.want, color: '#fff', bg: '#3a7bd5' },
-          { action: 'watched', icon: '✓', label: T.watched, color: '#333', bg: '#fff' },
+          { action: 'watched', icon: '✓', label: T.watched, color: 'var(--text)', bg: 'var(--card)' },
         ].map(b => (
           <button key={b.action} onClick={() => btnAction(b.action)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: b.bg, border: `2px solid ${b.bg === '#fff' ? b.color : b.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: b.action === 'want' ? 20 : 17, color: b.color }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: b.bg, border: `2px solid ${b.action === 'skip' ? '#e8335a' : b.action === 'want' ? '#3a7bd5' : 'var(--border2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: b.action === 'want' ? 20 : 17, color: b.color }}>
               {b.icon}
             </div>
-            <span style={{ fontSize: 9, color: '#999' }}>{b.label}</span>
+            <span style={{ fontSize: 9, color: 'var(--text3)' }}>{b.label}</span>
           </button>
         ))}
       </div>
