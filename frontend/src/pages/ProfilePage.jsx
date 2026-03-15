@@ -6,6 +6,21 @@ const LANGUAGES = [
   { id: 'en', label: '🇬🇧 English' },
 ]
 
+const ACHIEVEMENTS = [
+  { id: 'first', icon: '🎬', title: { uk: 'Перший фільм', en: 'First film' }, desc: { uk: 'Переглянув перший фільм', en: 'Watched your first film' }, check: s => s.watched >= 1 },
+  { id: 'five', icon: '⭐', title: { uk: '5 фільмів', en: '5 films' }, desc: { uk: 'Переглянув 5 фільмів', en: 'Watched 5 films' }, check: s => s.watched >= 5 },
+  { id: 'ten', icon: '🔥', title: { uk: '10 фільмів', en: '10 films' }, desc: { uk: 'Переглянув 10 фільмів', en: 'Watched 10 films' }, check: s => s.watched >= 10 },
+  { id: 'twenty', icon: '💎', title: { uk: '20 фільмів', en: '20 films' }, desc: { uk: 'Переглянув 20 фільмів', en: 'Watched 20 films' }, check: s => s.watched >= 20 },
+  { id: 'fifty', icon: '👑', title: { uk: '50 фільмів', en: '50 films' }, desc: { uk: 'Справжній кіноман!', en: 'True cinephile!' }, check: s => s.watched >= 50 },
+  { id: 'hundred', icon: '🏆', title: { uk: '100 фільмів', en: '100 films' }, desc: { uk: 'Легенда кіно!', en: 'Cinema legend!' }, check: s => s.watched >= 100 },
+  { id: 'critic', icon: '✍️', title: { uk: 'Критик', en: 'Critic' }, desc: { uk: 'Середня оцінка вище 8', en: 'Average rating above 8' }, check: s => s.avg >= 8 && s.watched >= 5 },
+  { id: 'harsh', icon: '😤', title: { uk: 'Суворий', en: 'Harsh' }, desc: { uk: 'Середня оцінка нижче 5', en: 'Average rating below 5' }, check: s => s.avg < 5 && s.watched >= 5 },
+  { id: 'wishlist', icon: '👁', title: { uk: 'Список бажань', en: 'Wishlist' }, desc: { uk: '10 фільмів у списку', en: '10 films in watchlist' }, check: s => s.want >= 10 },
+  { id: 'action', icon: '💥', title: { uk: 'Бойовик-маніяк', en: 'Action maniac' }, desc: { uk: '10 бойовиків', en: '10 action films' }, check: s => (s.genres['Action'] || s.genres['action'] || 0) >= 10 },
+  { id: 'drama', icon: '🎭', title: { uk: 'Драматург', en: 'Dramatist' }, desc: { uk: '10 драм', en: '10 dramas' }, check: s => (s.genres['Drama'] || s.genres['drama'] || 0) >= 10 },
+  { id: 'scifi', icon: '🚀', title: { uk: 'Космонавт', en: 'Astronaut' }, desc: { uk: '10 фантастик', en: '10 sci-fi films' }, check: s => (s.genres['Sci-fi'] || s.genres['sci-fi'] || 0) >= 10 },
+]
+
 export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -15,10 +30,11 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
   const [showLangPicker, setShowLangPicker] = useState(false)
   const [aiEnabled, setAiEnabled] = useState(() => localStorage.getItem('ai_enabled') !== 'false')
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [showAchievements, setShowAchievements] = useState(false)
 
   const T = {
-    uk: { watched: 'Переглянуто', want: 'Хочу', avg: 'Сер. оцінка', topGenres: 'Топ жанри', avgScore: 'Середня оцінка', lang: 'Мова', save: 'Зберегти', cancel: 'Скасувати', logout: 'Вийти', aiRecs: 'AI-рекомендації', reset: 'Скинути прогрес', resetConfirm: 'Ти впевнений? Всі оцінки та переглянуті фільми будуть видалені!', resetYes: 'Так, скинути', resetNo: 'Скасувати', resetDone: 'Прогрес скинуто!', darkTheme: 'Темна тема', lightTheme: 'Світла тема' },
-    en: { watched: 'Watched', want: 'Watchlist', avg: 'Avg score', topGenres: 'Top genres', avgScore: 'Average score', lang: 'Language', save: 'Save', cancel: 'Cancel', logout: 'Log out', aiRecs: 'AI recommendations', reset: 'Reset progress', resetConfirm: 'Are you sure? All ratings and watched films will be deleted!', resetYes: 'Yes, reset', resetNo: 'Cancel', resetDone: 'Progress reset!', darkTheme: 'Dark theme', lightTheme: 'Light theme' },
+    uk: { watched: 'Переглянуто', want: 'Хочу', avg: 'Сер. оцінка', topGenres: 'Топ жанри', avgScore: 'Середня оцінка', lang: 'Мова', save: 'Зберегти', cancel: 'Скасувати', logout: 'Вийти', aiRecs: 'AI-рекомендації', reset: 'Скинути прогрес', resetConfirm: 'Ти впевнений? Всі оцінки та переглянуті фільми будуть видалені!', resetYes: 'Так, скинути', resetNo: 'Скасувати', resetDone: 'Прогрес скинуто!', darkTheme: 'Темна тема', lightTheme: 'Світла тема', achievements: 'Досягнення', unlocked: 'отримано', locked: 'Заблоковано' },
+    en: { watched: 'Watched', want: 'Watchlist', avg: 'Avg score', topGenres: 'Top genres', avgScore: 'Average score', lang: 'Language', save: 'Save', cancel: 'Cancel', logout: 'Log out', aiRecs: 'AI recommendations', reset: 'Reset progress', resetConfirm: 'Are you sure? All ratings and watched films will be deleted!', resetYes: 'Yes, reset', resetNo: 'Cancel', resetDone: 'Progress reset!', darkTheme: 'Dark theme', lightTheme: 'Light theme', achievements: 'Achievements', unlocked: 'unlocked', locked: 'Locked' },
   }[lang] || {}
 
   useEffect(() => {
@@ -45,6 +61,7 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
     try { await API.delete('/user/reset') } catch {}
     localStorage.removeItem('seen_ids')
     localStorage.removeItem('cineswipe_tutorial_done')
+    localStorage.removeItem('achievements')
     setShowResetConfirm(false)
     setStats({ watched_count: 0, want_count: 0, average_score: 0, genre_counts: {} })
     alert(T.resetDone)
@@ -55,9 +72,14 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
   const genreData = stats ? Object.entries(stats.genre_counts || {}).sort((a, b) => b[1] - a[1]).slice(0, 5) : []
   const maxGenre = genreData[0]?.[1] || 1
 
+  const achievStats = stats ? { watched: stats.watched_count, want: stats.want_count, avg: stats.average_score, genres: stats.genre_counts || {} } : { watched: 0, want: 0, avg: 0, genres: {} }
+  const unlocked = ACHIEVEMENTS.filter(a => a.check(achievStats))
+  const locked = ACHIEVEMENTS.filter(a => !a.check(achievStats))
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 14, background: 'var(--bg)' }}>
 
+      {/* Reset confirm modal */}
       {showResetConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div style={{ background: 'var(--card)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 340 }}>
@@ -69,6 +91,65 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
         </div>
       )}
 
+      {/* Achievements modal */}
+      {showAchievements && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={e => e.target === e.currentTarget && setShowAchievements(false)}>
+          <div style={{ background: 'var(--card)', borderRadius: '24px 24px 0 0', padding: '24px 20px 36px', width: '100%', maxWidth: 420, maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 20, color: 'var(--text)' }}>{T.achievements}</div>
+              <button onClick={() => setShowAchievements(false)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', color: 'var(--text2)', fontSize: 16 }}>✕</button>
+            </div>
+
+            {/* Progress */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text3)', marginBottom: 6 }}>
+                <span>{unlocked.length}/{ACHIEVEMENTS.length} {T.unlocked}</span>
+                <span>{Math.round(unlocked.length / ACHIEVEMENTS.length * 100)}%</span>
+              </div>
+              <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: '100%', background: '#e8335a', borderRadius: 3, width: `${unlocked.length / ACHIEVEMENTS.length * 100}%` }} />
+              </div>
+            </div>
+
+            {/* Unlocked */}
+            {unlocked.length > 0 && (
+              <>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.4px' }}>✓ {T.unlocked}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 16 }}>
+                  {unlocked.map(a => (
+                    <div key={a.id} style={{ background: 'var(--bg)', borderRadius: 14, padding: 12, border: '1.5px solid #e8335a', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: 0, right: 0, width: 32, height: 32, background: '#e8335a', borderRadius: '0 14px 0 32px', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '4px 6px' }}>
+                        <span style={{ fontSize: 9, color: '#fff' }}>✓</span>
+                      </div>
+                      <div style={{ fontSize: 28, marginBottom: 6 }}>{a.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{a.title[lang]}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)' }}>{a.desc[lang]}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Locked */}
+            {locked.length > 0 && (
+              <>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.4px' }}>🔒 {T.locked}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {locked.map(a => (
+                    <div key={a.id} style={{ background: 'var(--bg)', borderRadius: 14, padding: 12, border: '1.5px solid var(--border)', opacity: 0.5 }}>
+                      <div style={{ fontSize: 28, marginBottom: 6, filter: 'grayscale(1)' }}>{a.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{a.title[lang]}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)' }}>{a.desc[lang]}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Profile head */}
       <div style={{ background: 'var(--card)', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <div style={{ width: 62, height: 62, borderRadius: '50%', background: '#e8335a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🎬</div>
         {editName ? (
@@ -86,6 +167,7 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
         <div style={{ fontSize: 11, color: 'var(--text3)' }}>{stats?.watched_count || 0} {T.watched} · {stats?.want_count || 0} {T.want}</div>
       </div>
 
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
         {[{ num: stats?.watched_count || 0, label: T.watched }, { num: stats?.want_count || 0, label: T.want }, { num: stats?.average_score || '—', label: T.avg }].map((s, i) => (
           <div key={i} style={{ background: 'var(--card)', borderRadius: 12, padding: '11px 8px', textAlign: 'center' }}>
@@ -95,6 +177,26 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
         ))}
       </div>
 
+      {/* Achievements preview */}
+      <div onClick={() => setShowAchievements(true)} style={{ background: 'var(--card)', borderRadius: 14, padding: '14px 16px', marginBottom: 12, cursor: 'pointer', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>🏆 {T.achievements}</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {unlocked.slice(0, 5).map(a => (
+              <span key={a.id} style={{ fontSize: 20 }}>{a.icon}</span>
+            ))}
+            {unlocked.length === 0 && <span style={{ fontSize: 11, color: 'var(--text3)' }}>Ще немає досягнень</span>}
+            {unlocked.length > 5 && <span style={{ fontSize: 11, color: 'var(--text3)', alignSelf: 'center' }}>+{unlocked.length - 5}</span>}
+          </div>
+          <div style={{ marginTop: 8, height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden', width: 120 }}>
+            <div style={{ height: '100%', background: '#e8335a', borderRadius: 2, width: `${unlocked.length / ACHIEVEMENTS.length * 100}%` }} />
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>{unlocked.length}/{ACHIEVEMENTS.length} {T.unlocked}</div>
+        </div>
+        <span style={{ color: 'var(--text3)', fontSize: 18 }}>›</span>
+      </div>
+
+      {/* Avg score */}
       {stats?.average_score > 0 && (
         <div style={{ background: 'var(--card)', borderRadius: 12, padding: 14, display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
           <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 38, color: '#e8335a', lineHeight: 1 }}>{stats.average_score}</div>
@@ -107,6 +209,7 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
         </div>
       )}
 
+      {/* Genre bars */}
       {genreData.length > 0 && (
         <div style={{ background: 'var(--card)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 9, textTransform: 'uppercase', letterSpacing: '.4px' }}>{T.topGenres}</div>
@@ -122,8 +225,8 @@ export function ProfilePage({ onLogout, username, lang, setLang, dark, setDark }
         </div>
       )}
 
+      {/* Settings */}
       <div style={{ background: 'var(--card)', borderRadius: 14, overflow: 'hidden', marginBottom: 10 }}>
-
         <div onClick={() => setShowLangPicker(v => !v)} style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '.5px solid var(--border)', cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: '#f0f4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🌍</div>
