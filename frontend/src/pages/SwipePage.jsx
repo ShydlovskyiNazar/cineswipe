@@ -244,7 +244,7 @@ export function SwipePage({ lang = 'uk' }) {
             <button onClick={handleRefresh} style={{ marginTop: 12, background: '#e8335a', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: 20, cursor: 'pointer', fontSize: 12 }}>{T.refresh}</button>
           </div>
         ) : (
-          <div style={{ position: 'relative', width: '100%', height: 420 }}>
+          <div style={{ position: 'relative', width: '100%', height: 520 }}>
             {movies.slice(1, 3).reverse().map((m, i) => (
               <div key={m.id} style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 28px rgba(0,0,0,.18)', transform: `translateX(${(i+1)*14}px) translateY(${(i+1)*8}px) rotate(${(i+1)*3}deg)`, zIndex: i }}>
                 {m.poster && <img src={m.poster} alt={m.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
