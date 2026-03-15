@@ -3,5 +3,42 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: #f0ece6; }
+
+:root {
+  --bg: #f0ece6;
+  --bg2: #fff;
+  --bg3: #f5f0eb;
+  --text: #1a1a1a;
+  --text2: #666;
+  --text3: #aaa;
+  --border: #f0ebe4;
+  --border2: #e0d8d0;
+  --card: #fff;
+  --header: #fff;
+  --accent: #e8335a;
+  --accent2: #3a7bd5;
+}
+
+[data-theme="dark"] {
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #222;
+  --text: #f0f0f0;
+  --text2: #aaa;
+  --text3: #666;
+  --border: #2a2a2a;
+  --border2: #333;
+  --card: #1a1a1a;
+  --header: #111;
+  --accent: #e8335a;
+  --accent2: #3a7bd5;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background .3s, color .3s;
+}
+
 .playfair { font-family: 'Playfair Display', serif; }
