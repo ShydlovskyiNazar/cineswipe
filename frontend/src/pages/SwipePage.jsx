@@ -30,6 +30,18 @@ const GENRES = {
   ],
 }
 
+function loadSeenIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem('seen_ids') || '[]'))
+  } catch { return new Set() }
+}
+
+function saveSeenIds(set) {
+  try {
+    localStorage.setItem('seen_ids', JSON.stringify([...set]))
+  } catch {}
+}
+
 export function SwipePage({ lang = 'uk' }) {
   const [movies, setMovies] = useState([])
   const [genre, setGenre] = useState('all')
@@ -37,13 +49,13 @@ export function SwipePage({ lang = 'uk' }) {
   const [loading, setLoading] = useState(true)
   const [liveScore, setLiveScore] = useState(null)
   const [swipeDir, setSwipeDir] = useState(null)
-  const [yearFrom, setYearFrom] = useState(1990)
+  const [yearFrom, setYearFrom] = useState(1950)
   const [yearTo, setYearTo] = useState(CURRENT_YEAR)
   const [showYearFilter, setShowYearFilter] = useState(false)
   const [tutorialStep, setTutorialStep] = useState(null)
   const drag = useRef({ active: false, startX: 0, startY: 0, dx: 0, dy: 0 })
   const cardRef = useRef(null)
-  const seenIds = useRef(new Set())
+  const seenIds = useRef(loadSeenIds())
 
   useEffect(() => {
     const seen = localStorage.getItem('cineswipe_tutorial_done')
@@ -63,15 +75,23 @@ export function SwipePage({ lang = 'uk' }) {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { seenIds.current.clear(); setPage(1); fetchMovies(genre, 1) }, [genre, yearFrom, yearTo])
+  useEffect(() => {
+    setPage(1)
+    fetchMovies(genre, 1)
+  }, [genre, yearFrom, yearTo])
 
   const current = movies[0]
   const genres = GENRES[lang] || GENRES.uk
 
   const T = {
-    uk: { from: 'від', to: 'до', loading: 'Завантаження...', empty: 'Фільми закінчились 🎬', noWatched: 'Не дивився', want: 'Хочу', watched: 'Дивився', score: 'Ваша оцінка', swipeUp: 'ХОЧУ ДИВИТИСЬ', swipeLeft: 'НЕ ЦІКАВО' },
-    en: { from: 'from', to: 'to', loading: 'Loading...', empty: 'No more films 🎬', noWatched: 'Skip', want: 'Want', watched: 'Watched', score: 'Your rating', swipeUp: 'WANT TO WATCH', swipeLeft: 'NOT INTERESTED' },
+    uk: { from: 'від', to: 'до', loading: 'Завантаження...', empty: 'Фільми закінчились 🎬', refresh: 'Оновити', noWatched: 'Не дивився', want: 'Хочу', watched: 'Дивився', score: 'Ваша оцінка', swipeUp: 'ХОЧУ ДИВИТИСЬ', swipeLeft: 'НЕ ЦІКАВО' },
+    en: { from: 'from', to: 'to', loading: 'Loading...', empty: 'No more films 🎬', refresh: 'Refresh', noWatched: 'Skip', want: 'Want', watched: 'Watched', score: 'Your rating', swipeUp: 'WANT TO WATCH', swipeLeft: 'NOT INTERESTED' },
   }[lang] || {}
+
+  const markSeen = (id) => {
+    seenIds.current.add(id)
+    saveSeenIds(seenIds.current)
+  }
 
   const applyDrag = (dx, dy) => {
     const card = cardRef.current
@@ -108,20 +128,21 @@ export function SwipePage({ lang = 'uk' }) {
     const card = cardRef.current
     setLiveScore(null); setSwipeDir(null)
     const isUp = Math.abs(dy) > Math.abs(dx) && dy < -80
+
     if (isUp && current) {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateY(-700px)' }
       await API.post('/watchlist/add', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year }).catch(() => {})
-      seenIds.current.add(current.id)
+      markSeen(current.id)
       setTimeout(() => { setMovies(prev => prev.slice(1)); if (card) { card.style.transition = ''; card.style.transform = '' } }, 300)
     } else if (dx > 40 && current) {
       const score = Math.min(10, Math.max(1, Math.round((dx / SWIPE_MAX) * 9) + 1))
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateX(700px) rotate(35deg)' }
       await API.post('/movies/rate', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year, score }).catch(() => {})
-      seenIds.current.add(current.id)
+      markSeen(current.id)
       setTimeout(() => { setMovies(prev => prev.slice(1)); if (card) { card.style.transition = ''; card.style.transform = '' } }, 300)
     } else if (dx < -80 && current) {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateX(-700px) rotate(-35deg)' }
-      seenIds.current.add(current.id)
+      markSeen(current.id)
       setTimeout(() => { setMovies(prev => prev.slice(1)); if (card) { card.style.transition = ''; card.style.transform = '' } }, 300)
     } else {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = '' }
@@ -134,17 +155,17 @@ export function SwipePage({ lang = 'uk' }) {
     const card = cardRef.current
     if (action === 'skip') {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateX(-700px) rotate(-35deg)' }
-      seenIds.current.add(current.id)
+      markSeen(current.id)
       setTimeout(() => setMovies(prev => prev.slice(1)), 300)
     } else if (action === 'want') {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateY(-700px)' }
       await API.post('/watchlist/add', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year }).catch(() => {})
-      seenIds.current.add(current.id)
+      markSeen(current.id)
       setTimeout(() => setMovies(prev => prev.slice(1)), 300)
     } else {
       if (card) { card.style.transition = 'transform .3s'; card.style.transform = 'translateX(700px) rotate(35deg)' }
       await API.post('/movies/rate', { movie_id: current.id, movie_title: current.title, movie_poster: current.poster, movie_genres: current.genres, movie_year: current.year, score: 8 }).catch(() => {})
-      seenIds.current.add(current.id)
+      markSeen(current.id)
       setTimeout(() => setMovies(prev => prev.slice(1)), 300)
     }
   }
@@ -152,6 +173,13 @@ export function SwipePage({ lang = 'uk' }) {
   const finishTutorial = () => {
     localStorage.setItem('cineswipe_tutorial_done', '1')
     setTutorialStep(null)
+  }
+
+  const handleRefresh = () => {
+    seenIds.current = new Set()
+    saveSeenIds(seenIds.current)
+    setPage(1)
+    fetchMovies(genre, 1)
   }
 
   if (loading && movies.length === 0) return (
@@ -195,7 +223,7 @@ export function SwipePage({ lang = 'uk' }) {
         </div>
         {showYearFilter && (
           <div style={{ padding: '10px 16px 14px', borderTop: '1px solid #f5f5f5' }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 16 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>{T.from}: {yearFrom}</div>
                 <input type="range" min="1950" max={yearTo} value={yearFrom} onChange={e => setYearFrom(Number(e.target.value))} style={{ width: '100%', accentColor: '#e8335a' }} />
@@ -211,8 +239,9 @@ export function SwipePage({ lang = 'uk' }) {
 
       <div style={{ flex: 1, position: 'relative', padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {movies.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>{T.empty}<br/>
-            <button onClick={() => { seenIds.current.clear(); fetchMovies(genre, 1) }} style={{ marginTop: 12, background: '#e8335a', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: 20, cursor: 'pointer', fontSize: 12 }}>Оновити</button>
+          <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>
+            {T.empty}<br/>
+            <button onClick={handleRefresh} style={{ marginTop: 12, background: '#e8335a', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: 20, cursor: 'pointer', fontSize: 12 }}>{T.refresh}</button>
           </div>
         ) : (
           <div style={{ position: 'relative', width: '100%', height: 320 }}>

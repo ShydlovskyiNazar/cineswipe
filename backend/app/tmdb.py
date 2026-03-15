@@ -12,14 +12,22 @@ GENRE_MAP = {
 }
 
 async def get_popular(page: int = 1, genre_id: int = None):
-    params = {"api_key": TMDB_KEY, "language": "uk-UA", "page": page}
-    if genre_id:
-        params["with_genres"] = genre_id
-    url = f"{BASE}/discover/movie" if genre_id else f"{BASE}/movie/popular"
+    all_movies = []
     async with httpx.AsyncClient() as client:
-        r = await client.get(url, params=params)
-        data = r.json()
-    return [format_movie(m) for m in data.get("results", []) if m.get("poster_path")]
+        for p in range(page, page + 3):
+            params = {
+                "api_key": TMDB_KEY,
+                "language": "uk-UA",
+                "page": p,
+                "vote_count.gte": 50,
+                "sort_by": "popularity.desc"
+            }
+            if genre_id:
+                params["with_genres"] = genre_id
+            r = await client.get(f"{BASE}/discover/movie", params=params)
+            data = r.json()
+            all_movies.extend([format_movie(m) for m in data.get("results", []) if m.get("poster_path")])
+    return all_movies
 
 async def search_movies(query: str):
     params = {"api_key": TMDB_KEY, "language": "uk-UA", "query": query}
