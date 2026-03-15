@@ -2,15 +2,15 @@ import React, { useState, useEffect, useRef } from 'react'
 import API from '../api'
 
 const GENRE_FILTERS = [
-  { id: 'all', label: 'Всі' },
-  { id: 'action', label: 'Бойовик' },
-  { id: 'drama', label: 'Драма' },
-  { id: 'comedy', label: 'Комедія' },
-  { id: 'thriller', label: 'Трилер' },
-  { id: 'sci-fi', label: 'Фантастика' },
+  { id: 'all', label: { uk: 'Всі', en: 'All' } },
+  { id: 'action', label: { uk: 'Бойовик', en: 'Action' } },
+  { id: 'drama', label: { uk: 'Драма', en: 'Drama' } },
+  { id: 'comedy', label: { uk: 'Комедія', en: 'Comedy' } },
+  { id: 'thriller', label: { uk: 'Трилер', en: 'Thriller' } },
+  { id: 'sci-fi', label: { uk: 'Фантастика', en: 'Sci-Fi' } },
 ]
 
-export function WantPage() {
+export function WantPage({ lang = 'uk' }) {
   const [items, setItems] = useState([])
   const [genre, setGenre] = useState('all')
   const [search, setSearch] = useState('')
@@ -20,6 +20,11 @@ export function WantPage() {
   const [score, setScore] = useState(7)
   const [loading, setLoading] = useState(true)
   const searchRef = useRef(null)
+
+  const T = {
+    uk: { title: 'Хочу подивитись', search: 'Пошук фільму...', empty: 'Ще нічого не додано\nСвайпни ↑ або знайди фільм', notFound: 'Нічого не знайдено', yourScore: 'Ваша оцінка', confirm: 'Підтвердити ✓', cancel: 'Скасувати' },
+    en: { title: 'Watchlist', search: 'Search film...', empty: 'Nothing added yet\nSwipe ↑ or find a film', notFound: 'Nothing found', yourScore: 'Your rating', confirm: 'Confirm ✓', cancel: 'Cancel' },
+  }[lang] || {}
 
   useEffect(() => {
     API.get('/watchlist').then(r => setItems(r.data)).finally(() => setLoading(false))
@@ -64,16 +69,15 @@ export function WantPage() {
 
   const filtered = genre === 'all' ? items : items.filter(i => (i.movie_genres || '').toLowerCase().includes(genre))
 
-  if (loading) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Завантаження...</div>
+  if (loading) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>...</div>
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 14, background: '#f0ece6' }}>
-      <div className="playfair" style={{ fontSize: 18, color: '#1a1a1a', marginBottom: 12 }}>Хочу подивитись</div>
+      <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, color: '#1a1a1a', marginBottom: 12 }}>{T.title}</div>
 
-      {/* Search */}
       <div style={{ position: 'relative', marginBottom: 10 }} ref={searchRef}>
         <input value={search} onChange={e => setSearch(e.target.value)} onFocus={() => results.length && setShowDd(true)}
-          placeholder="🔍 Пошук фільму..."
+          placeholder={`🔍 ${T.search}`}
           style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '.5px solid #e0d8d0', background: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Inter, sans-serif' }} />
         {showDd && results.length > 0 && (
           <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', borderRadius: 12, border: '.5px solid #e0d8d0', boxShadow: '0 4px 20px rgba(0,0,0,.1)', zIndex: 100, overflow: 'hidden', marginTop: 4 }}>
@@ -94,20 +98,18 @@ export function WantPage() {
         )}
       </div>
 
-      {/* Genre filters */}
       <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 12 }}>
         {GENRE_FILTERS.map(g => (
           <button key={g.id} onClick={() => setGenre(g.id)}
             style={{ padding: '4px 12px', borderRadius: 20, border: '1.5px solid', borderColor: genre === g.id ? '#3a7bd5' : '#e0d8d0', background: genre === g.id ? '#3a7bd5' : '#fff', color: genre === g.id ? '#fff' : '#666', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            {g.label}
+            {g.label[lang] || g.label.uk}
           </button>
         ))}
       </div>
 
-      {/* List */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#aaa', fontSize: 12 }}>
-          {items.length === 0 ? 'Ще нічого не додано\nСвайпни 👁 або знайди фільм' : 'Нічого не знайдено'}
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#aaa', fontSize: 12, whiteSpace: 'pre-line' }}>
+          {items.length === 0 ? T.empty : T.notFound}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -132,32 +134,26 @@ export function WantPage() {
         </div>
       )}
 
-      {/* Rating modal */}
       {modalMovie && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={e => e.target === e.currentTarget && setModalMovie(null)}>
           <div style={{ background: '#1a1a2e', borderRadius: '24px 24px 0 0', padding: '24px 24px 36px', width: '100%', maxWidth: 420 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               {modalMovie.movie_poster && <img src={modalMovie.movie_poster} alt="" style={{ width: 48, height: 68, objectFit: 'cover', borderRadius: 10 }} />}
               <div>
-                <div className="playfair" style={{ fontSize: 18, color: '#fff' }}>{modalMovie.movie_title}</div>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, color: '#fff' }}>{modalMovie.movie_title}</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', marginTop: 2 }}>{modalMovie.movie_year}</div>
               </div>
             </div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginBottom: 8 }}>Ваша оцінка</div>
-            <div className="playfair" style={{ fontSize: 56, color: '#fff', textAlign: 'center', lineHeight: 1, marginBottom: 12 }}>{score}</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginBottom: 8 }}>{T.yourScore}</div>
+            <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 56, color: '#fff', textAlign: 'center', lineHeight: 1, marginBottom: 12 }}>{score}</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 16 }}>
               {Array.from({ length: 10 }, (_, i) => (
                 <span key={i} onClick={() => setScore(i + 1)} style={{ fontSize: 22, cursor: 'pointer', color: i < score ? '#e8335a' : '#444' }}>★</span>
               ))}
             </div>
-            <input type="range" min="1" max="10" step="1" value={score} onChange={e => setScore(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#e8335a', marginBottom: 20 }} />
-            <button onClick={confirmWatched} style={{ width: '100%', padding: '14px 0', borderRadius: 16, background: '#e8335a', color: '#fff', border: 'none', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>
-              Підтвердити ✓
-            </button>
-            <button onClick={() => setModalMovie(null)} style={{ width: '100%', padding: '10px 0', background: 'transparent', color: 'rgba(255,255,255,.5)', border: 'none', fontSize: 13, cursor: 'pointer', marginTop: 6 }}>
-              Скасувати
-            </button>
+            <input type="range" min="1" max="10" step="1" value={score} onChange={e => setScore(Number(e.target.value))} style={{ width: '100%', accentColor: '#e8335a', marginBottom: 20 }} />
+            <button onClick={confirmWatched} style={{ width: '100%', padding: '14px 0', borderRadius: 16, background: '#e8335a', color: '#fff', border: 'none', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>{T.confirm}</button>
+            <button onClick={() => setModalMovie(null)} style={{ width: '100%', padding: '10px 0', background: 'transparent', color: 'rgba(255,255,255,.5)', border: 'none', fontSize: 13, cursor: 'pointer', marginTop: 6 }}>{T.cancel}</button>
           </div>
         </div>
       )}

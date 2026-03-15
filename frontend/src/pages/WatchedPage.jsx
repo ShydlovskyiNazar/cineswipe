@@ -2,29 +2,33 @@ import React, { useState, useEffect } from 'react'
 import API from '../api'
 
 const FOLDER_META = {
-  action: { name: 'Бойовик', emoji: '💥' },
-  drama: { name: 'Драма', emoji: '🎭' },
-  comedy: { name: 'Комедія', emoji: '😂' },
-  thriller: { name: 'Трилер', emoji: '😱' },
-  'sci-fi': { name: 'Фантастика', emoji: '🚀' },
-  romance: { name: 'Романтика', emoji: '❤️' },
-  adventure: { name: 'Пригоди', emoji: '🗺️' },
-  animation: { name: 'Анімація', emoji: '🎨' },
-  other: { name: 'Інше', emoji: '🎬' },
+  action: { name: { uk: 'Бойовик', en: 'Action' }, emoji: '💥' },
+  drama: { name: { uk: 'Драма', en: 'Drama' }, emoji: '🎭' },
+  comedy: { name: { uk: 'Комедія', en: 'Comedy' }, emoji: '😂' },
+  thriller: { name: { uk: 'Трилер', en: 'Thriller' }, emoji: '😱' },
+  'sci-fi': { name: { uk: 'Фантастика', en: 'Sci-Fi' }, emoji: '🚀' },
+  romance: { name: { uk: 'Романтика', en: 'Romance' }, emoji: '❤️' },
+  adventure: { name: { uk: 'Пригоди', en: 'Adventure' }, emoji: '🗺️' },
+  animation: { name: { uk: 'Анімація', en: 'Animation' }, emoji: '🎨' },
+  other: { name: { uk: 'Інше', en: 'Other' }, emoji: '🎬' },
 }
 
-export function WatchedPage() {
+export function WatchedPage({ lang = 'uk' }) {
   const [movies, setMovies] = useState([])
   const [openFolder, setOpenFolder] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const T = {
+    uk: { title: 'Переглянуто', empty: 'Ще немає переглянутих фільмів\nСвайпни вправо щоб додати', back: '← Назад', films: 'фільмів', film: 'фільм' },
+    en: { title: 'Watched', empty: 'No watched films yet\nSwipe right to add', back: '← Back', films: 'films', film: 'film' },
+  }[lang] || {}
 
   useEffect(() => {
     API.get('/movies/rated').then(r => setMovies(r.data)).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Завантаження...</div>
+  if (loading) return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>...</div>
 
-  // group by primary genre tag
   const groups = {}
   movies.forEach(m => {
     const tags = (m.movie_genres || '').split(', ').map(g => g.toLowerCase().trim())
@@ -39,9 +43,11 @@ export function WatchedPage() {
     return (
       <div style={{ flex: 1, overflowY: 'auto', padding: 14, background: '#f0ece6' }}>
         <div onClick={() => setOpenFolder(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#e8335a', fontSize: 13, cursor: 'pointer', marginBottom: 12, fontWeight: 500 }}>
-          ← Назад
+          {T.back}
         </div>
-        <div className="playfair" style={{ fontSize: 18, color: '#1a1a1a', marginBottom: 12 }}>{meta.emoji} {meta.name}</div>
+        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, color: '#1a1a1a', marginBottom: 12 }}>
+          {meta.emoji} {meta.name[lang] || meta.name.uk}
+        </div>
         {items.map(m => (
           <div key={m.id} style={{ background: '#fff', borderRadius: 12, padding: '11px 13px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, border: '.5px solid #f0ebe4' }}>
             {m.movie_poster && <img src={m.movie_poster} alt={m.movie_title} style={{ width: 48, height: 68, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />}
@@ -57,23 +63,28 @@ export function WatchedPage() {
   }
 
   if (!Object.keys(groups).length) {
-    return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 13, textAlign: 'center', padding: 20 }}>Ще немає переглянутих фільмів<br />Свайпни вправо щоб додати</div>
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 13, textAlign: 'center', padding: 20 }}>
+        {T.empty}
+      </div>
+    )
   }
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 14, background: '#f0ece6' }}>
-      <div className="playfair" style={{ fontSize: 18, color: '#1a1a1a', marginBottom: 12 }}>Переглянуто</div>
+      <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, color: '#1a1a1a', marginBottom: 12 }}>{T.title}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
         {Object.entries(groups).map(([tag, items]) => {
           const meta = FOLDER_META[tag] || FOLDER_META.other
           return (
-            <div key={tag} onClick={() => setOpenFolder(tag)} style={{ background: '#fff', borderRadius: 14, padding: '14px 12px', cursor: 'pointer', border: '.5px solid #f0ebe4', transition: 'transform .15s' }}
+            <div key={tag} onClick={() => setOpenFolder(tag)}
+              style={{ background: '#fff', borderRadius: 14, padding: '14px 12px', cursor: 'pointer', border: '.5px solid #f0ebe4', transition: 'transform .15s' }}
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             >
               <div style={{ fontSize: 28, marginBottom: 6 }}>{meta.emoji}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{meta.name}</div>
-              <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{items.length} фільм{items.length === 1 ? '' : 'ів'}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{meta.name[lang] || meta.name.uk}</div>
+              <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{items.length} {items.length === 1 ? T.film : T.films}</div>
               <div style={{ display: 'flex', gap: 3, marginTop: 8 }}>
                 {items.slice(0, 3).map(m => (
                   m.movie_poster
