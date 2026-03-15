@@ -4,6 +4,7 @@ import { SwipePage } from './pages/SwipePage'
 import { WatchedPage } from './pages/WatchedPage'
 import { WantPage } from './pages/WantPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { AchievementsPage } from './pages/AchievementsPage'
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'))
@@ -37,11 +38,11 @@ export default function App() {
   }
 
   const T = {
-    uk: { pick: 'Підібрати', watched: 'Переглянуто', want: 'Хочу', profile: 'Профіль' },
-    en: { pick: 'Discover', watched: 'Watched', want: 'Watchlist', profile: 'Profile' },
+    uk: { pick: 'Підібрати', watched: 'Переглянуто', want: 'Хочу', achieve: 'Бейджі', profile: 'Профіль' },
+    en: { pick: 'Discover', watched: 'Watched', want: 'Watchlist', achieve: 'Badges', profile: 'Profile' },
   }[lang] || {}
 
-  if (!token) return <AuthPage onLogin={login} dark={dark} />
+  if (!token) return <AuthPage onLogin={login} />
 
   return (
     <div style={{ maxWidth: 420, margin: '0 auto', background: 'var(--bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -62,6 +63,7 @@ export default function App() {
         {tab === 'swipe' && <SwipePage lang={lang} dark={dark} />}
         {tab === 'watched' && <WatchedPage lang={lang} dark={dark} />}
         {tab === 'want' && <WantPage lang={lang} dark={dark} />}
+        {tab === 'achieve' && <AchievementsPage lang={lang} />}
         {tab === 'profile' && <ProfilePage onLogout={logout} username={username} lang={lang} setLang={changeLang} dark={dark} setDark={setDark} />}
       </div>
 
@@ -70,10 +72,11 @@ export default function App() {
           { id: 'swipe', icon: '🎬', label: T.pick },
           { id: 'watched', icon: '✓', label: T.watched },
           { id: 'want', icon: '👁', label: T.want },
+          { id: 'achieve', icon: '🏆', label: T.achieve },
           { id: 'profile', icon: '👤', label: T.profile },
         ].map(n => (
-          <div key={n.id} onClick={() => setTab(n.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, cursor: 'pointer', fontSize: 9, color: tab === n.id ? 'var(--accent)' : 'var(--text3)', padding: '0 8px' }}>
-            <span style={{ fontSize: 20 }}>{n.icon}</span>
+          <div key={n.id} onClick={() => setTab(n.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, cursor: 'pointer', fontSize: 9, color: tab === n.id ? 'var(--accent)' : 'var(--text3)', padding: '0 4px' }}>
+            <span style={{ fontSize: 18 }}>{n.icon}</span>
             <span>{n.label}</span>
           </div>
         ))}
